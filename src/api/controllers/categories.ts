@@ -19,6 +19,10 @@ class CategoryController {
     try {
       const { label, parent_id } = req.body;
 
+      if (!label) {
+        throw new Error(`Label already exist`);
+      }
+
       const alreadyExist = await Category.findOne({
         where: {
           label,
@@ -28,6 +32,14 @@ class CategoryController {
 
       if (alreadyExist) throw new Error(`Category ${label} already exist`);
 
+      const parentExist = await Category.findOne({
+        where: {
+          id: parent_id,
+        },
+      });
+
+      if (!parentExist) throw new Error(`Invalid Parent Category`);
+
       const category = await Category.create({
         label,
         parent_id,
@@ -35,6 +47,7 @@ class CategoryController {
 
       return apiResponse(res, category);
     } catch (error) {
+      console.log(error.message);
       next(error);
     }
   };
@@ -66,9 +79,14 @@ class CategoryController {
 
       if (!parent) throw new Error('Parent Category not found');
 
-      await category.update({
-        parent_id,
-      });
+      await Category.update(
+        {
+          parent_id,
+        },
+        {
+          where: { id },
+        },
+      );
 
       return apiResponse(res, category);
     } catch (error) {
